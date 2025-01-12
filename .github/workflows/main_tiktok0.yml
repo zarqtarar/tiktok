@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy PHP app to Azure Web App - tiktok0
+name: Build and deploy ASP.Net Core app to Azure Web App - tiktok0
 
 on:
   push:
@@ -11,37 +11,30 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
         with:
-          php-version: '8.2'
+          dotnet-version: '9.x'
 
-      - name: Check if composer.json exists
-        id: check_files
-        uses: andstor/file-existence-action@v1
-        with:
-          files: 'composer.json'
+      - name: Build with dotnet
+        run: dotnet build --configuration Release
 
-      - name: Run composer install if composer.json exists
-        if: steps.check_files.outputs.files_exists == 'true'
-        run: composer validate --no-check-publish && composer install --prefer-dist --no-progress
-
-      - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
+      - name: dotnet publish
+        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: php-app
-          path: release.zip
+          name: .net-app
+          path: ${{env.DOTNET_ROOT}}/myapp
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: build
     environment:
       name: 'Production'
@@ -53,21 +46,18 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: php-app
-
-      - name: Unzip artifact for deployment
-        run: unzip release.zip
+          name: .net-app
       
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_2B9CF68E1900499FAD015A26EB7B50EC }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_33BE8E0A16514DFD9A89F5E42A6072E7 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_607100CD7B7A43559DA2A424BCFB83AB }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_31B1AA32B10144E499F480125FACB665 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C806C408028D4EC7A8BC39ABF2D887A0 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_9A6D70F8450C4296A8CC7A4BE8856660 }}
 
-      - name: 'Deploy to Azure Web App'
-        uses: azure/webapps-deploy@v3
+      - name: Deploy to Azure Web App
         id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
         with:
           app-name: 'tiktok0'
           slot-name: 'Production'
